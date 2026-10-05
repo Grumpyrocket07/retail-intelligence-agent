@@ -1,0 +1,23 @@
+.env
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# raw dataset and generated files are rebuilt by the pipeline
+data/raw/*
+data/processed/*
+data/audit/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/audit/.gitkeep
+data/ml/*
+!data/ml/.gitkeep
+# large model files: keep out of git (rebuilt or downloaded separately)
+models/sentiment_model/
+models/*.zip
+.venv/
+.pytest_cache/
+docs/sql_eval_progress*.json
+# one-time history rebuild kit
+history/
+build_history.py
