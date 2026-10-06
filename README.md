@@ -4,7 +4,7 @@ Analytics on 1M+ retail transactions (UCI Online Retail II): a MySQL data pipeli
 and a Text-to-SQL pipeline with layered safety checks. Document Q&A (RAG), a routing agent, observability and a demo interface
 are planned (see the roadmap at the bottom).
 
-**Status:** milestone 1 of 8 done (data foundation).
+**Status:** milestone 1 done; milestone 2 in progress (churn dataset built, models next).
 
 ## Milestone 1 - data foundation
 
@@ -72,6 +72,28 @@ run is in `docs/cleaning_report.json`.
 - 7.4% of orders are anonymous; they count toward sales but not toward customer-level analysis.
 - The data ends on 9 Dec 2011, so December 2011 is a partial month.
 
+## Milestone 2a - churn dataset
+
+Turns the database into training examples for a churn model. Settings live in `ml/config.py`.
+
+- **Churn definition:** a customer who ordered in the 365 days before a snapshot date is *churned* if they place no
+  order in the following 90 days (long-dormant customers are left out because they are trivially churned). Chosen after checking real behaviour: the median gap between a customer's orders is 25 days and
+  83% of gaps are 90 days or shorter.
+- **Snapshots:** train on 9 Sep 2010 and 9 Mar 2011, validate on 9 Jun 2011, test on 9 Sep 2011 (the last date whose
+  90-day window fits inside the data). The model is always tested on a later period than it learned from.
+- **No leakage:** features only read data dated before the snapshot; the label only reads the 90 days after it.
+  `tests/test_churn_leakage.py` proves this, including a test that adding future orders changes no feature.
+- **Features (19):** recency, tenure, order counts and spend over 90/180/365 days, average order value, average gap
+  between orders, basket size, returns, UK or not. Spend is gross sales; returns are separate columns.
+
+```bash
+python -m pytest -q              # leakage tests, no database needed
+python -m ml.churn_dataset       # writes data/ml/churn_dataset.csv (16,263 rows) and a summary json
+```
+
+Notes: churn is common in this data (42-64% depending on the snapshot), so recall must always be read together with
+precision. `avg_gap_days` is empty for customers with only one order day; the modelling step handles that.
+
 ## Data source and attribution
 
 Chen, Daqing. (2019). *Online Retail II*. UCI Machine Learning Repository.
@@ -80,7 +102,7 @@ https://archive.ics.uci.edu/dataset/502/online+retail+ii - licensed CC BY 4.0.
 ## Roadmap
 
 1. Data foundation (done)
-2. ML models: churn prediction and sentiment analysis
+2. ML models: churn prediction and sentiment analysis (in progress)
 3. Prediction API
 4. Text-to-SQL with validation and injection prevention
 5. RAG with ChromaDB
