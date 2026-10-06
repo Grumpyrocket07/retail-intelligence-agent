@@ -1,0 +1,186 @@
+{
+  "rows": {
+    "train": 7618,
+    "validation": 4326,
+    "test": 4319
+  },
+  "churn_rate": {
+    "train": 0.5403,
+    "validation": 0.6394,
+    "test": 0.4957
+  },
+  "gradient_boosting_settings": {
+    "max_depth": 3,
+    "learning_rate": 0.08,
+    "max_iter": 150
+  },
+  "selected_model": "pytorch_mlp",
+  "results": {
+    "one_clue_rule": {
+      "val_pr_auc": 0.8218,
+      "test_pr_auc": 0.6652,
+      "test_roc_auc": 0.7072,
+      "thresholds_from_validation": {
+        "best_f1": 33.0,
+        "recall_80": 54.0
+      },
+      "test_at_best_f1": {
+        "threshold": 33.0,
+        "precision": 0.57,
+        "recall": 0.886,
+        "f1": 0.693,
+        "accuracy": 0.611,
+        "tp": 1896,
+        "fp": 1433,
+        "fn": 245,
+        "tn": 745
+      },
+      "test_at_recall_80": {
+        "threshold": 54.0,
+        "precision": 0.605,
+        "recall": 0.824,
+        "f1": 0.698,
+        "accuracy": 0.647,
+        "tp": 1765,
+        "fp": 1150,
+        "fn": 376,
+        "tn": 1028
+      }
+    },
+    "logistic_regression": {
+      "val_pr_auc": 0.815,
+      "test_pr_auc": 0.6838,
+      "test_roc_auc": 0.7485,
+      "thresholds_from_validation": {
+        "best_f1": 0.3628,
+        "recall_80": 0.5358
+      },
+      "test_at_best_f1": {
+        "threshold": 0.3628,
+        "precision": 0.588,
+        "recall": 0.946,
+        "f1": 0.725,
+        "accuracy": 0.645,
+        "tp": 2025,
+        "fp": 1418,
+        "fn": 116,
+        "tn": 760
+      },
+      "test_at_recall_80": {
+        "threshold": 0.5358,
+        "precision": 0.639,
+        "recall": 0.858,
+        "f1": 0.733,
+        "accuracy": 0.69,
+        "tp": 1837,
+        "fp": 1036,
+        "fn": 304,
+        "tn": 1142
+      },
+      "test_pr_auc_gain_over_rule": {
+        "mean": 0.0188,
+        "ci95": [
+          0.0033,
+          0.036
+        ]
+      }
+    },
+    "gradient_boosting": {
+      "val_pr_auc": 0.844,
+      "test_pr_auc": 0.7058,
+      "test_roc_auc": 0.7601,
+      "thresholds_from_validation": {
+        "best_f1": 0.3796,
+        "recall_80": 0.5665
+      },
+      "test_at_best_f1": {
+        "threshold": 0.3796,
+        "precision": 0.586,
+        "recall": 0.957,
+        "f1": 0.727,
+        "accuracy": 0.644,
+        "tp": 2049,
+        "fp": 1445,
+        "fn": 92,
+        "tn": 733
+      },
+      "test_at_recall_80": {
+        "threshold": 0.5665,
+        "precision": 0.647,
+        "recall": 0.842,
+        "f1": 0.731,
+        "accuracy": 0.694,
+        "tp": 1802,
+        "fp": 984,
+        "fn": 339,
+        "tn": 1194
+      },
+      "test_pr_auc_gain_over_rule": {
+        "mean": 0.0409,
+        "ci95": [
+          0.0242,
+          0.0589
+        ]
+      }
+    },
+    "pytorch_mlp": {
+      "val_pr_auc": 0.855,
+      "test_pr_auc": 0.7271,
+      "test_roc_auc": 0.7645,
+      "thresholds_from_validation": {
+        "best_f1": 0.3403,
+        "recall_80": 0.5141
+      },
+      "test_at_best_f1": {
+        "threshold": 0.3403,
+        "precision": 0.597,
+        "recall": 0.941,
+        "f1": 0.73,
+        "accuracy": 0.655,
+        "tp": 2015,
+        "fp": 1363,
+        "fn": 126,
+        "tn": 815
+      },
+      "test_at_recall_80": {
+        "threshold": 0.5141,
+        "precision": 0.645,
+        "recall": 0.819,
+        "f1": 0.722,
+        "accuracy": 0.687,
+        "tp": 1753,
+        "fp": 964,
+        "fn": 388,
+        "tn": 1214
+      },
+      "test_pr_auc_gain_over_rule": {
+        "mean": 0.062,
+        "ci95": [
+          0.0464,
+          0.0793
+        ]
+      }
+    }
+  },
+  "permutation_importance_selected_on_validation": {
+    "avg_gap_days": 0.0049,
+    "n_orders_total": 0.0043,
+    "spend_365d": 0.0042,
+    "spend_180d": 0.0027,
+    "n_orders_180d": 0.0026,
+    "total_spend": 0.0024,
+    "n_orders_90d": 0.0022,
+    "n_orders_365d": 0.0021,
+    "recency_over_avg_gap": 0.0021,
+    "spend_90d": 0.0014,
+    "recency_days": 0.0008,
+    "avg_basket_products": 0.0008,
+    "return_value": 0.0008,
+    "return_ratio": 0.0007,
+    "n_return_lines": 0.0004,
+    "avg_order_value": 0.0002,
+    "avg_basket_lines": -0.0,
+    "is_uk": -0.0002,
+    "tenure_days": -0.0011
+  }
+}

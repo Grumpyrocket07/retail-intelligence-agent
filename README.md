@@ -4,7 +4,7 @@ Analytics on 1M+ retail transactions (UCI Online Retail II): a MySQL data pipeli
 and a Text-to-SQL pipeline with layered safety checks. Document Q&A (RAG), a routing agent, observability and a demo interface
 are planned (see the roadmap at the bottom).
 
-**Status:** milestone 1 done; milestone 2 in progress (churn dataset built, models next).
+**Status:** milestone 1 done; milestone 2 in progress (churn dataset and churn models built, sentiment model next).
 
 ## Milestone 1 - data foundation
 
@@ -93,6 +93,35 @@ python -m ml.churn_dataset       # writes data/ml/churn_dataset.csv (16,263 rows
 
 Notes: churn is common in this data (42-64% depending on the snapshot), so recall must always be read together with
 precision. `avg_gap_days` is empty for customers with only one order day; the modelling step handles that.
+
+## Milestone 2b - churn models
+
+```bash
+python -m ml.train_churn         # trains and compares the models, writes models/ and docs/churn_pr_curve.png
+```
+
+Four models are compared on the same data: a one-clue rule (days since last order), logistic regression, gradient
+boosting (scikit-learn) and a small PyTorch neural network (average of 5 random starts). Settings are tuned on the
+validation snapshot only; the test snapshot (9 Sep 2011) is used once, at the end.
+
+- **Metrics:** PR-AUC and ROC-AUC (threshold-free), plus precision/recall at two thresholds chosen on validation:
+  the best-F1 threshold, and the threshold that reaches 80% recall.
+- **Why compare to a rule:** a model is only worth shipping if it beats the simplest sensible alternative. The script
+  reports the gain over the one-clue rule with a 95% range from resampling the test customers.
+- **Base-rate drift:** churn is 54% in training, 64% in validation and 50% in test (seasonal), so a threshold picked on
+  validation does not transfer perfectly. Prefer the threshold-free metrics when comparing models.
+- Output: `models/churn_metrics.json` (all numbers), `models/churn_*.joblib` / `churn_mlp.pt` (fitted models).
+
+**Results on the test snapshot (9 Sep 2011), gain in PR-AUC over the one-clue rule, with a 95% range from resampling:**
+
+| Model | Gain over rule | 95% range |
+|---|---|---|
+| Logistic regression | +0.019 | +0.003 to +0.036 |
+| Gradient boosting | +0.041 | +0.024 to +0.059 |
+| PyTorch network (selected on validation score) | +0.062 | +0.046 to +0.079 |
+
+The gradient-boosting and PyTorch ranges overlap, so the network is at least as good as boosting, not clearly better.
+All models beat the rule by a modest margin: days since last order is already a strong signal in this data.
 
 ## Data source and attribution
 
