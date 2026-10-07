@@ -4,7 +4,7 @@ Analytics on 1M+ retail transactions (UCI Online Retail II): a MySQL data pipeli
 and a Text-to-SQL pipeline with layered safety checks. Document Q&A (RAG), a routing agent, observability and a demo interface
 are planned (see the roadmap at the bottom).
 
-**Status:** milestone 1 done; milestone 2 in progress (churn dataset and churn models built, sentiment model next).
+**Status:** milestones 1-2 done (data, churn and sentiment models).
 
 ## Milestone 1 - data foundation
 
@@ -123,6 +123,18 @@ validation snapshot only; the test snapshot (9 Sep 2011) is used once, at the en
 The gradient-boosting and PyTorch ranges overlap, so the network is at least as good as boosting, not clearly better.
 All models beat the rule by a modest margin: days since last order is already a strong signal in this data.
 
+## Milestone 2c - sentiment model
+
+Reads a customer review and says whether it is positive or negative (the API adds an `uncertain` band for scores in the middle).
+The model is DistilBERT fine-tuned in PyTorch on public Amazon product reviews, trained in a Google Colab notebook
+(`notebooks/train_sentiment_colab.ipynb`, free T4 GPU, roughly 10-15 minutes).
+
+- **Data:** `fancyzhx/amazon_polarity`: 30,000 reviews to learn from, 3,000 to tune on, 10,000 held out for the final score.
+- **Result:** 94.3% accuracy on the 10,000 unseen reviews (about +/-0.5%), against 90.5% for a TF-IDF + logistic regression
+  baseline. Precision and recall are about 0.94 for both classes.
+- **Limits:** the model is trained on general product reviews, not gift-ware specifically, and must pick a side even for neutral text.
+- The saved model (about 250 MB) is not in this repository. Put it in `models/sentiment_model/` (git ignores that folder).
+
 ## Data source and attribution
 
 Chen, Daqing. (2019). *Online Retail II*. UCI Machine Learning Repository.
@@ -131,7 +143,7 @@ https://archive.ics.uci.edu/dataset/502/online+retail+ii - licensed CC BY 4.0.
 ## Roadmap
 
 1. Data foundation (done)
-2. ML models: churn prediction and sentiment analysis (in progress)
+2. ML models: churn prediction and sentiment analysis (done)
 3. Prediction API
 4. Text-to-SQL with validation and injection prevention
 5. RAG with ChromaDB
