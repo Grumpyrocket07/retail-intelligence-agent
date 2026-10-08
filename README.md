@@ -4,7 +4,7 @@ Analytics on 1M+ retail transactions (UCI Online Retail II): a MySQL data pipeli
 and a Text-to-SQL pipeline with layered safety checks. Document Q&A (RAG), a routing agent, observability and a demo interface
 are planned (see the roadmap at the bottom).
 
-**Status:** milestones 1-2 done (data, churn and sentiment models).
+**Status:** milestones 1-3 done (data, ML models, prediction API).
 
 ## Milestone 1 - data foundation
 
@@ -135,6 +135,38 @@ The model is DistilBERT fine-tuned in PyTorch on public Amazon product reviews, 
 - **Limits:** the model is trained on general product reviews, not gift-ware specifically, and must pick a side even for neutral text.
 - The saved model (about 250 MB) is not in this repository. Put it in `models/sentiment_model/` (git ignores that folder).
 
+## Milestone 3 - prediction API
+
+A small web service that lets other programs (and later the agent) ask the models questions.
+
+```bash
+uvicorn api.main:app --reload          # then open http://127.0.0.1:8000/docs
+```
+
+The `/docs` page lists every endpoint and lets you try them from the browser (click an endpoint, "Try it out", "Execute").
+Start-up takes a few seconds: it reads the order tables from MySQL, scores every recently active customer once, and loads
+the sentiment model from `models/sentiment_model/`.
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health` | Which models loaded, which churn model is serving, and "today" for scoring |
+| `POST /sentiment` | `{"text": "..."}` returns `positive`, `negative` or `uncertain` plus the positive probability |
+| `POST /sentiment/batch` | Same for up to 64 texts: `{"texts": ["...", "..."]}` |
+| `GET /churn/{customer_id}` | Churn score, whether the customer is flagged at risk, and the signals behind it |
+| `GET /churn/top?limit=10` | The customers most likely to leave, highest score first |
+
+Things worth knowing:
+
+- **"Today" is 10 Dec 2011**, the day after the last order in the data. Override with the `CHURN_AS_OF` environment variable.
+- **The churn score is a ranking, not a probability.** Higher means more likely to place no order in the next 90 days.
+  `flagged_at_risk` uses the threshold that caught 80% of leavers on validation data (`models/churn_metrics.json`).
+- **Dormant customers** (no order in 365 days) come back with `scored: false`, matching how the model was trained.
+- **Sentiment scores between 0.35 and 0.65 are reported as `uncertain`** instead of being forced to a side.
+- **No train/serve mismatch:** live churn clues come from the same `build_features` function used to build the training data;
+  a check against the saved test-set scores shows zero difference.
+- If a model fails to load the API still starts; `/health` says which one and why, and its endpoints return 503.
+- Settings: `CHURN_MODEL` (logistic_regression, gradient_boosting or pytorch_mlp), `SENTIMENT_MODEL_PATH`, `CHURN_AS_OF`.
+
 ## Data source and attribution
 
 Chen, Daqing. (2019). *Online Retail II*. UCI Machine Learning Repository.
@@ -144,7 +176,7 @@ https://archive.ics.uci.edu/dataset/502/online+retail+ii - licensed CC BY 4.0.
 
 1. Data foundation (done)
 2. ML models: churn prediction and sentiment analysis (done)
-3. Prediction API
+3. Prediction API (done)
 4. Text-to-SQL with validation and injection prevention
 5. RAG with ChromaDB
 6. Agent routing with LangChain
