@@ -4,7 +4,7 @@ Analytics on 1M+ retail transactions (UCI Online Retail II): a MySQL data pipeli
 and a Text-to-SQL pipeline with layered safety checks. Document Q&A (RAG), a routing agent, observability and a demo interface
 are planned (see the roadmap at the bottom).
 
-**Status:** milestones 1-3 done (data, ML models, prediction API).
+**Status:** milestones 1-4 done (data, ML models, prediction API, Text-to-SQL).
 
 ## Milestone 1 - data foundation
 
@@ -167,6 +167,48 @@ Things worth knowing:
 - If a model fails to load the API still starts; `/health` says which one and why, and its endpoints return 503.
 - Settings: `CHURN_MODEL` (logistic_regression, gradient_boosting or pytorch_mlp), `SENTIMENT_MODEL_PATH`, `CHURN_AS_OF`.
 
+## Milestone 4 - Text-to-SQL
+
+Ask the database a question in plain English. A language model (Gemini, through LangChain) writes the SQL, a safety
+check inspects it, a read-only database user runs it, and the rows come back.
+
+```bash
+python -m sql_agent.ask "Which 5 countries have the highest revenue?"
+python -m sql_agent.evaluate        # scores the pipeline on 37 test questions, writes docs/sql_eval_report.md
+python -m sql_agent.evaluate --resume   # after an interrupted or error-hit run, redo only the unscored questions
+```
+
+**One-time setup:** create the read-only user (`sql/01_create_readonly_user.sql`), add `DB_RO_USER`, `DB_RO_PASSWORD` and
+`GEMINI_API_KEY` to `.env` (see `.env.example`), then `pip install -r requirements.txt`.
+
+### Safety: four layers, because the question and the AI's answer are both untrusted
+
+| Layer | What it does |
+|---|---|
+| Prompt | The AI is told to write one SELECT, use only the six tables, and answer `CANNOT_ANSWER` for anything else |
+| SQL guard (`sql_agent/guard.py`) | Parses the SQL: one statement only, SELECT/WITH/UNION only, only the six tables, no system schemas, no `SLEEP`, `LOAD_FILE`, `VERSION()` etc., no `INTO OUTFILE` or `FOR UPDATE`; adds `LIMIT 200`. The SQL that runs is regenerated from the checked syntax tree, so what was checked is what runs |
+| Read-only database user | Can only `SELECT`. The pipeline refuses to start if the user holds any write privilege |
+| Database limits | Read-only transactions and a query time limit (30 seconds by default, `SQL_TIMEOUT_SECONDS` in `.env`) |
+
+Unsafe requests are blocked at once with no retry. Fixable problems (an unknown table, a database error) are sent back to the
+AI, which gets up to 3 attempts.
+
+### Evaluation
+
+`sql_agent/eval_questions.json` holds 37 questions: 26 with a hand-written reference query ("execution accuracy": the returned
+values must match the reference result), 2 that cannot be answered from the data, 8 attacks (delete, drop, read password hashes,
+read system info, `SLEEP`, insert, update, prompt injection), and 1 request for a huge result. After a run the harness also checks that
+the database is unchanged. Without the AI, the harness itself was checked: a stand-in that answers perfectly scores 37/37 against the
+real data, and one with planted mistakes loses exactly those questions.
+
+Notes: results vary slightly from run to run. The free Gemini tier is sometimes overloaded or rate-limited, so the harness waits and retries; a question the AI service still cannot answer is reported as *not scored*, never as wrong. `python -m sql_agent.evaluate --resume` redoes only those questions (progress is saved in `docs/sql_eval_progress.json`).
+On the free tier Google may use prompts to improve its products; only the schema description and your questions are sent, never table rows.
+
+**Result:** 37 of 37 scored questions passed on `gemini-3.8-flash` (26 data questions, 2 that cannot be answered, 8 attack
+prompts, 1 request for a huge result), and the database was unchanged afterwards. The free tier was sometimes overloaded, so the run
+used the retry and `--resume` support. The questions were written by the author and nothing was tuned against them: treat this as a
+sanity check on the pipeline, not a benchmark. Details: `docs/sql_eval_report.md`.
+
 ## Data source and attribution
 
 Chen, Daqing. (2019). *Online Retail II*. UCI Machine Learning Repository.
@@ -177,7 +219,7 @@ https://archive.ics.uci.edu/dataset/502/online+retail+ii - licensed CC BY 4.0.
 1. Data foundation (done)
 2. ML models: churn prediction and sentiment analysis (done)
 3. Prediction API (done)
-4. Text-to-SQL with validation and injection prevention
+4. Text-to-SQL with validation and injection prevention (done)
 5. RAG with ChromaDB
 6. Agent routing with LangChain
 7. Observability: logging, retries, traces
