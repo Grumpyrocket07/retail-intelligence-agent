@@ -4,7 +4,7 @@ Analytics on 1M+ retail transactions (UCI Online Retail II): a MySQL data pipeli
 and a Text-to-SQL pipeline with layered safety checks. Document Q&A (RAG), a routing agent, observability and a demo interface
 are planned (see the roadmap at the bottom).
 
-**Status:** milestones 1-4 done (data, ML models, prediction API, Text-to-SQL).
+**Status:** milestones 1-4 of 8 done (data, ML models, prediction API, Text-to-SQL); milestones 5-8 are planned.
 
 ## Milestone 1 - data foundation
 
