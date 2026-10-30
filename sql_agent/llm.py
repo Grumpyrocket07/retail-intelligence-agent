@@ -1,7 +1,8 @@
-"""The language model that writes SQL. Gemini through LangChain; swap get_llm() to use a different provider.
+"""The language model used across the project. Gemini through LangChain; change get_chat_model() to use a different provider.
 
-An 'llm' in this project is just a function: it takes a list of (role, text) messages and returns the reply text.
-That keeps the rest of the code (and the tests) independent of any particular provider.
+Two shapes are offered:
+  get_llm()         a plain function: list of (role, text) messages in, reply text out (SQL, document Q&A)
+  get_chat_model()  the LangChain chat model itself, needed by the agent for tool calling
 """
 import os
 import warnings
@@ -13,7 +14,10 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parents[1]
 LLM = Callable[[list], str]
 
-DEFAULT_MODEL = "gemini-3.8-flash"
+# Some Gemini models ignore the temperature setting and the library warns about it on every call.
+warnings.filterwarnings("ignore", message=".*fixed sampling defaults.*")
+
+DEFAULT_MODEL = "gemini-3.5-flash-lite"   # gemini-3.8-flash often timed out (504) on the free tier
 
 
 def content_to_text(content) -> str:
@@ -29,7 +33,7 @@ def content_to_text(content) -> str:
     return "".join(parts)
 
 
-def get_llm() -> LLM:
+def get_chat_model():
     load_dotenv(ROOT / ".env", override=True)
     key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not key:
@@ -46,10 +50,14 @@ def get_llm() -> LLM:
     # Gemini 3 models "think" before answering, which can be slow. GEMINI_REASONING_EFFORT = minimal | low | medium | high
     effort = os.getenv("GEMINI_REASONING_EFFORT")
     try:
-        model = ChatGoogleGenerativeAI(**settings, reasoning_effort=effort) if effort else ChatGoogleGenerativeAI(**settings)
+        return ChatGoogleGenerativeAI(**settings, reasoning_effort=effort) if effort else ChatGoogleGenerativeAI(**settings)
     except Exception as exc:  # an older langchain-google-genai may not know this setting
         warnings.warn(f"GEMINI_REASONING_EFFORT was ignored: {exc}")
-        model = ChatGoogleGenerativeAI(**settings)
+        return ChatGoogleGenerativeAI(**settings)
+
+
+def get_llm() -> LLM:
+    model = get_chat_model()
 
     def call(messages: list) -> str:
         return content_to_text(model.invoke(messages).content)

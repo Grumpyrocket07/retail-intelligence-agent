@@ -1,0 +1,17 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+transformers
+sentence-transformers
+chromadb
+langchain-core
+langchain-google-genai
+sqlglot
+SQLAlchemy
+PyMySQL
+cryptography
+pandas
+numpy
+scikit-learn
+joblib
+python-dotenv
+streamlit
